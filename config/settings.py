@@ -1,7 +1,6 @@
 from dotenv import load_dotenv
 import os
 
-# Tải các biến môi trường từ tệp .env
 load_dotenv()
 
 # --- API Keys ---
@@ -11,9 +10,12 @@ if not GOOGLE_API_KEY:
     exit()
 
 # --- Cấu hình mô hình ---
-EMBEDDING_MODEL_NAME = "all-MiniLM-L6-v2" # Model embedding từ HuggingFace
-LLM_MODEL_NAME = "gemini-2.5-flash"       # Model Gemini (từ run.py)
+
+# NÂNG CẤP: Chuyển sang mô hình đa ngôn ngữ mạnh mẽ hơn (768 dimensions)
+# Mô hình này hiểu tiếng Việt tốt hơn nhiều so với 'all-MiniLM-L6-v2'
+EMBEDDING_MODEL_NAME = "sentence-transformers/paraphrase-multilingual-mpnet-base-v2"
+
+LLM_MODEL_NAME = "gemini-2.5-flash"
 
 # --- Cấu hình cơ sở dữ liệu ---
-# Thư mục để lưu trữ cơ sở dữ liệu vector (từ test.py)
 PERSIST_DIRECTORY = "chroma_db_csv"

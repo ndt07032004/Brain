@@ -1,18 +1,24 @@
+import sys
+import os
+# Thêm dòng này để chạy script từ thư mục gốc
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import csv
 from langchain_community.vectorstores import Chroma
 from langchain.schema import Document
 from src.helper import download_hugging_face_embeddings
 from config import settings
-import os
+from utils.logger import get_logger
 import shutil
+
+logger = get_logger(__name__)
 
 def load_data_from_csv(filepath="dataset.csv"):
     """
     Đọc dữ liệu từ tệp CSV và tạo danh sách Documents cho LangChain.
-    Logic dựa trên tệp test.py
     """
     documents = []
-    print(f"Đang đọc tệp {filepath}...")
+    logger.info(f"Đang đọc tệp {filepath}...")
     
     try:
         with open(filepath, encoding="utf-8") as file:
@@ -21,8 +27,8 @@ def load_data_from_csv(filepath="dataset.csv"):
             
             count = 0
             for i, line in enumerate(reader):
-                if len(line) < 5: # Đảm bảo đủ 5 cột
-                    print(f"Bỏ qua dòng {i+2}: không đủ cột.")
+                if len(line) < 5: 
+                    logger.warning(f"Bỏ qua dòng {i+2}: không đủ cột.")
                     continue
                 
                 # Ghép các thông tin làm nội dung (content)
@@ -44,43 +50,43 @@ def load_data_from_csv(filepath="dataset.csv"):
                 documents.append(Document(page_content=content, metadata=metadata))
                 count += 1
                 
-        print(f"Đã đọc thành công {count} tài liệu từ CSV.")
+        logger.info(f"Đã đọc thành công {count} tài liệu từ CSV.")
         return documents
         
     except FileNotFoundError:
-        print(f"LỖI: Không tìm thấy tệp {filepath}. Vui lòng kiểm tra lại.")
+        logger.error(f"LỖI: Không tìm thấy tệp {filepath}. Vui lòng kiểm tra lại.")
         return []
     except Exception as e:
-        print(f"Lỗi khi đọc CSV: {e}")
+        logger.error(f"Lỗi khi đọc CSV: {e}", exc_info=True)
         return []
 
 def main():
-    # 1. Tải dữ liệu từ CSV
+    logger.info("--- BẮT ĐẦU QUÁ TRÌNH NẠP DỮ LIỆU ---")
+    
     documents = load_data_from_csv("dataset.csv")
     
     if not documents:
-        print("Không có dữ liệu để xử lý. Dừng lại.")
+        logger.error("Không có dữ liệu để xử lý. Dừng lại.")
         return
 
-    # 2. Tải mô hình embedding
     embeddings = download_hugging_face_embeddings()
 
-    # 3. Tạo và lưu trữ vào ChromaDB
-    print(f"Đang tạo và lưu trữ vector vào thư mục: '{settings.PERSIST_DIRECTORY}'...")
+    logger.info(f"Đang tạo/lưu trữ vector vào thư mục: '{settings.PERSIST_DIRECTORY}'...")
     
-    # Xóa thư mục DB cũ nếu tồn tại để build lại từ đầu
     if os.path.exists(settings.PERSIST_DIRECTORY):
-        print(f"Phát hiện thư mục cũ. Đang xóa: '{settings.PERSIST_DIRECTORY}'")
+        logger.warning(f"Phát hiện thư mục cũ. Đang xóa: '{settings.PERSIST_DIRECTORY}'")
         shutil.rmtree(settings.PERSIST_DIRECTORY)
 
-    # Tạo và lưu trữ vector
-    vectordb = Chroma.from_documents(
-        documents=documents,
-        embedding=embeddings,
-        persist_directory=settings.PERSIST_DIRECTORY
-    )
-    
-    print("--- HOÀN TẤT NẠP DỮ LIỆU VÀO CHROMA ---")
+    try:
+        vectordb = Chroma.from_documents(
+            documents=documents,
+            embedding=embeddings,
+            persist_directory=settings.PERSIST_DIRECTORY
+        )
+        logger.info(f"Đã lưu thành công {len(documents)} vector vào ChromaDB.")
+        logger.info("--- HOÀN TẤT NẠP DỮ LIỆU VÀO CHROMA ---")
+    except Exception as e:
+        logger.error(f"Lỗi khi nạp vào ChromaDB: {e}", exc_info=True)
 
 if __name__ == "__main__":
     main()
