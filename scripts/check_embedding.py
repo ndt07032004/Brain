@@ -37,7 +37,7 @@ def check_database():
             return
 
         # Thực hiện một truy vấn thử (dựa trên test.py)
-        test_query = "Khuôn đúc rìu đá"
+        test_query = "Áo dài của nữ chiến sĩ cách mạng"
         logger.info(f"Đang thực hiện truy vấn thử với: '{test_query}'...")
         results = vectordb.similarity_search(test_query, k=1)
         
